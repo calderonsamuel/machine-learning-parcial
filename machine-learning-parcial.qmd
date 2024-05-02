@@ -25,14 +25,16 @@ validation <- read_csv("data/test_x.csv") |>
 ```{r}
 # We ignore this step for this new attempt
 
-# # This enables the analysis to be reproducible when random numbers are used 
+# # This enables the analysis to be reproducible when random numbers are used
 # set.seed(42)
-# # Put 3/4 of the data into the training set 
+# # Put 3/4 of the data into the training set
 # data_split <- initial_split(suscripcion, prop = 3/4)
 # 
 # # Create data frames for the two sets:
 # train_data <- training(data_split)
 # test_data  <- testing(data_split)
+
+folds <- vfold_cv(suscripcion, strata = `Subscripcion Deposito`)
 ```
 
 ## Recipe
@@ -70,6 +72,14 @@ suscripcion_fit <- my_workflow |>
 ```
 
 ```{r}
+set.seed(42)
+suscripcion_fit_resampled <- my_workflow |> 
+  fit_resamples(folds, control = control_resamples(save_workflow = TRUE)) |> 
+  fit_best()
+```
+
+
+```{r}
 # suscripcion_fit |> 
 #   extract_fit_parsnip() |> 
 #   tidy()
@@ -88,11 +98,15 @@ suscripcion_fit <- my_workflow |>
 #   roc_auc(truth = `Subscripcion Deposito`, .pred_no)
 ```
 
+## Predictions
+
 ```{r}
-resultados <- suscripcion_fit |> 
+resultados <- suscripcion_fit_resampled |> 
   augment(validation) |> 
   select(Id, `Subscripcion Deposito` = .pred_si)
 ```
+
+## Save results
 
 ```{r}
 resultados |> 
