@@ -41,6 +41,7 @@ validation <- read_csv("data/test_x.csv") |>
 my_recipe <- recipe(`Subscripcion Deposito` ~ ., data = suscripcion) |> 
   update_role(Id, Duracion, new_role = "ID") |> 
   step_dummy(all_nominal_predictors()) |> 
+  step_range(all_numeric_predictors()) |> 
   step_zv(all_predictors())
 
 my_recipe
