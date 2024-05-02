@@ -10,39 +10,35 @@ library(tidyverse)
 library(tidymodels)
 ```
 
+## Read data
+
 ```{r}
-suscripcion <- read_csv("data/train.csv")
+suscripcion <- read_csv("data/train.csv") |> 
+  mutate_if(is.character, as.factor)
+
 validation <- read_csv("data/test_x.csv") |> 
   mutate_if(is.character, as.factor)
 ```
 
-```{r}
-suscripcion_processed <- suscripcion |> 
-  mutate_if(is.character, as.factor)
-```
-
-```{r}
-suscripcion_processed$`Subscripcion Deposito` 
-```
-
-
 ## Data splitting
 
 ```{r}
-# This enables the analysis to be reproducible when random numbers are used 
-set.seed(42)
-# Put 3/4 of the data into the training set 
-data_split <- initial_split(suscripcion_processed, prop = 3/4)
+# We ignore this step for this new attempt
 
-# Create data frames for the two sets:
-train_data <- training(data_split)
-test_data  <- testing(data_split)
+# # This enables the analysis to be reproducible when random numbers are used 
+# set.seed(42)
+# # Put 3/4 of the data into the training set 
+# data_split <- initial_split(suscripcion, prop = 3/4)
+# 
+# # Create data frames for the two sets:
+# train_data <- training(data_split)
+# test_data  <- testing(data_split)
 ```
 
 ## Recipe
 
 ```{r}
-my_recipe <- recipe(`Subscripcion Deposito` ~ ., data = train_data) |> 
+my_recipe <- recipe(`Subscripcion Deposito` ~ ., data = suscripcion) |> 
   update_role(Id, Duracion, new_role = "ID") |> 
   step_dummy(all_nominal_predictors()) |> 
   step_zv(all_predictors())
@@ -69,26 +65,26 @@ my_workflow <- workflow() |>
 
 ```{r}
 suscripcion_fit <- my_workflow |> 
-  fit(data = train_data)
+  fit(data = suscripcion)
 ```
 
 ```{r}
-suscripcion_fit |> 
-  extract_fit_parsnip() |> 
-  tidy()
+# suscripcion_fit |> 
+#   extract_fit_parsnip() |> 
+#   tidy()
 ```
 
 ```{r}
-suscripcion_fit |> 
-  augment(test_data) |> 
-  roc_curve(truth = `Subscripcion Deposito`, .pred_no) |> 
-  autoplot()
+# suscripcion_fit |> 
+#   augment(test_data) |> 
+#   roc_curve(truth = `Subscripcion Deposito`, .pred_no) |> 
+#   autoplot()
 ```
 
 ```{r}
-suscripcion_fit |> 
-  augment(test_data) |> 
-  roc_auc(truth = `Subscripcion Deposito`, .pred_no)
+# suscripcion_fit |> 
+#   augment(test_data) |> 
+#   roc_auc(truth = `Subscripcion Deposito`, .pred_no)
 ```
 
 ```{r}
