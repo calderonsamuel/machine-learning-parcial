@@ -4,7 +4,6 @@ editor_options:
   chunk_output_type: console
 ---
 
-
 ```{r}
 library(tidyverse)
 library(tidymodels)
@@ -34,7 +33,7 @@ validation <- read_csv("data/test_x.csv") |>
 # train_data <- training(data_split)
 # test_data  <- testing(data_split)
 
-folds <- vfold_cv(suscripcion, strata = `Subscripcion Deposito`)
+folds <- vfold_cv(suscripcion, strata = `Subscripcion Deposito`, v = 5, repeats = 100)
 ```
 
 ## Recipe
@@ -52,8 +51,9 @@ my_recipe
 ## Model
 
 ```{r}
-my_model <- logistic_reg() |> 
-  set_engine("glm")
+my_model <- boost_tree(trees = 15) |> 
+  set_engine("xgboost") |> 
+  set_mode("classification")
 ```
 
 ## Workflow
@@ -67,17 +67,18 @@ my_workflow <- workflow() |>
 ## Fit
 
 ```{r}
-suscripcion_fit <- my_workflow |> 
-  fit(data = suscripcion)
+# suscripcion_fit <- my_workflow |> 
+#   fit(data = suscripcion)
 ```
 
 ```{r}
 set.seed(42)
+tictoc::tic()
 suscripcion_fit_resampled <- my_workflow |> 
   fit_resamples(folds, control = control_resamples(save_workflow = TRUE)) |> 
   fit_best()
+tictoc::toc()
 ```
-
 
 ```{r}
 # suscripcion_fit |> 
@@ -109,13 +110,25 @@ resultados <- suscripcion_fit_resampled |>
 ## Save results
 
 ```{r}
-resultados |> 
-  write_csv(format(now(), "results/r-%Y-%m-%d-%H-%M-%S.csv"))
+last_result <- list.files("results", full.names = TRUE) |> 
+  last() |> 
+  read_csv()
 ```
 
+```{r}
+results_are_the_same <- tibble(
+  current = resultados$`Subscripcion Deposito`,
+  last = last_result$`Subscripcion Deposito`
+) |> 
+  mutate(across(everything(), ~ .x > 0.5)) |> 
+  count(across(everything())) |> 
+  summarise(equals = n() == 2) |> 
+  pull(equals)
+```
 
-
-
-
-
-
+```{r}
+if (!results_are_the_same) {
+  resultados |> 
+    write_csv(format(now(), "results/r-%Y-%m-%d-%H-%M-%S.csv"))
+}
+```
