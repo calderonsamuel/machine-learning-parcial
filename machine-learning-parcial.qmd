@@ -33,14 +33,15 @@ validation <- read_csv("data/test_x.csv") |>
 # train_data <- training(data_split)
 # test_data  <- testing(data_split)
 
-folds <- vfold_cv(suscripcion, strata = `Subscripcion Deposito`, v = 5, repeats = 100)
+folds <- vfold_cv(suscripcion, strata = `Subscripcion Deposito`)
 ```
 
 ## Recipe
 
 ```{r}
 my_recipe <- recipe(`Subscripcion Deposito` ~ ., data = suscripcion) |> 
-  update_role(Id, Duracion, new_role = "ID") |> 
+  update_role(Id, new_role = "ID") |> 
+  update_role(Duracion, new_role = "ID") |>
   step_dummy(all_nominal_predictors()) |> 
   step_normalize(all_numeric_predictors()) |> 
   step_zv(all_predictors())
@@ -51,8 +52,8 @@ my_recipe
 ## Model
 
 ```{r}
-my_model <- boost_tree(trees = 15) |> 
-  set_engine("xgboost") |> 
+my_model <- rand_forest() |> 
+  # set_engine("xgboost") |> 
   set_mode("classification")
 ```
 
@@ -73,11 +74,14 @@ my_workflow <- workflow() |>
 
 ```{r}
 set.seed(42)
-tictoc::tic()
-suscripcion_fit_resampled <- my_workflow |> 
-  fit_resamples(folds, control = control_resamples(save_workflow = TRUE)) |> 
+
+suscripcion_fit_cv <- my_workflow |> 
+  fit_resamples(folds, control = control_resamples(save_workflow = TRUE))
+```
+
+```{r}
+suscripcion_fit <- suscripcion_fit_cv |> 
   fit_best()
-tictoc::toc()
 ```
 
 ```{r}
@@ -102,7 +106,7 @@ tictoc::toc()
 ## Predictions
 
 ```{r}
-resultados <- suscripcion_fit_resampled |> 
+resultados <- suscripcion_fit |> 
   augment(validation) |> 
   select(Id, `Subscripcion Deposito` = .pred_si)
 ```
