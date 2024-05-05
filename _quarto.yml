@@ -3,4 +3,5 @@ project:
   output-dir: docs
 
 editor: visual
-
+resources: 
+  - "data/*"

@@ -3,14 +3,13 @@ title: "Modelo de clasificación: Suscripción"
 author: "Samuel Calderon, Kevin Arenas, Jose Torres" 
 format: 
   revealjs:
-    
-    logo: logo-pucp.png
+    logo: data/logo-pucp.png
     footer: INF648-PUCP-2024-01 - Aprendizaje Automático
     theme: simple
     number-sections: true
     slide-number: c/t
 title-slide-attributes:
-    data-background-image: title-background.png
+    data-background-image: data/title-background.png
     data-background-size: contain
     data-background-opacity: "1"
 editor_options: 
@@ -20,6 +19,9 @@ execute:
   echo: true
 mermaid-format: svg
 code-line-numbers: false
+
+resources: 
+  - "data/*"
 ---
 
 # Introducción
