@@ -1,65 +1,150 @@
 ---
-title: "machine-learning-parcial"
+title: "Modelo de clasificación: Suscripción"
+author: "Samuel Calderon, Kevin Arenas, Jose Torres" 
+format: 
+  revealjs:
+    
+    logo: logo-pucp.png
+    footer: INF648-PUCP-2024-01 - Aprendizaje Automático
+    theme: simple
+    number-sections: true
+    slide-number: c/t
+title-slide-attributes:
+    data-background-image: title-background.png
+    data-background-size: contain
+    data-background-opacity: "1"
 editor_options: 
-  chunk_output_type: console
+  chunk_output_type: inline
+execute: 
+  cache: true
+  echo: true
+mermaid-format: svg
+code-line-numbers: false
 ---
 
+# Introducción
+
+## Cargado de librerías
+
+Se decidió usar R en lugar de Python. Para este trabajo solo se necesitan dos librerías. `tidyverse` para la lectura, limpieza, y análisis de data, y `tidymodels` para la definición y ejecución de modelos de machine learning.
+
 ```{r}
+#| label: library
+#| message: false
 library(tidyverse)
 library(tidymodels)
 ```
 
-## Read data
+## Lectura de datos
+
+Al leer los datos, se aprovecha para hacer la limpieza respectiva. En este caso solo se necesita convertir las variables de tipo texto en "factor" (categóricas).
 
 ```{r}
+#| label: data-reading
+# Data de entrenamiento
 suscripcion <- read_csv("data/train.csv") |> 
   mutate_if(is.character, as.factor)
 
-validation <- read_csv("data/test_x.csv") |> 
+# Data de test
+validacion <- read_csv("data/test_x.csv") |> 
   mutate_if(is.character, as.factor)
+```
+
+Las funciones de R suelen soportar el operador pipe (`|>`), que permite pasar el output de una función como primer parámetro de la siguiente.
+
+------------------------------------------------------------------------
+
+```{r}
+#| label: dims
+dim(suscripcion)
+dim(validacion)
+```
+
+Se puede ver las dimensiones de cada conjunto de datos.
+
+## Flujo de trabajo de tidymodels
+
+```{mermaid}
+%%| label: fig-diagram
+%%| echo: false
+%%| fig-height: 6
+flowchart LR 
+  data[/Dataset/]
+  pre[/Plantilla pre procesamiento/]
+  choice[/Plantilla de modelo/]
+  ds(Data splitting)
+  dtr[/Training/]
+  dte[/Test/]
+  fit(Fit)
+  model[/Modelo entrenado/]
+  val(Validación)
+  
+  data --> ds
+  ds --> dtr
+  ds --> dte
+  choice --> fit
+  pre --> fit
+  dtr --> fit 
+  fit --> model --> val
+  dte --> val
 ```
 
 ## Data splitting
 
+Dividimos `suscripcion` en un conjunto de entrenamiento (75%) y uno de test (25%).
+
 ```{r}
-# We ignore this step for this new attempt
+#| label: data-splitting
+set.seed(42)
 
-# # This enables the analysis to be reproducible when random numbers are used
-# set.seed(42)
-# # Put 3/4 of the data into the training set
-# data_split <- initial_split(suscripcion, prop = 3/4)
-# 
-# # Create data frames for the two sets:
-# train_data <- training(data_split)
-# test_data  <- testing(data_split)
+data_split <- initial_split(suscripcion, prop = 3/4)
 
-folds <- vfold_cv(suscripcion, strata = `Subscripcion Deposito`)
+train_data <- training(data_split)
+test_data  <- testing(data_split)
+
 ```
 
-## Recipe
+Alternativamente, preparamos un conjunto para validación cruzada de 10 sub-grupos. Estratificamos según la variable dependiente para evitar demasiado \*inbalance\*. Esto se utilizará más adelante.
 
 ```{r}
+#| label: cross-validation
+folds_cv <- vfold_cv(suscripcion, strata = `Subscripcion Deposito`, v = 10)
+```
+
+# Regresión logística
+
+## Plantilla de preprocesamiento
+
+Para el pre procesamiento empezamos definiendo la fórmula del modelo. El punto hace referencia a todo el resto de variables.
+
+```{r}
+#| label: recipe
 my_recipe <- recipe(`Subscripcion Deposito` ~ ., data = suscripcion) |> 
-  update_role(Id, new_role = "ID") |> 
-  update_role(Duracion, new_role = "ID") |>
+  update_role(Id, Duracion, new_role = "ignored") |>
   step_dummy(all_nominal_predictors()) |> 
   step_normalize(all_numeric_predictors()) |> 
   step_zv(all_predictors())
-
-my_recipe
 ```
 
-## Model
+Esta plantilla se va a utilizar también para otros modelos.
+
+## Plantilla de modelo
+
+Para el primer ejemplo, usamos la regresión logística. `set_engine()` y `set_mode()` permiten personalizar la implementación del modelo.
 
 ```{r}
-my_model <- rand_forest() |> 
-  # set_engine("xgboost") |> 
+#| label: model
+my_model <- logistic_reg() |> 
+  set_engine("glm") |>
   set_mode("classification")
 ```
 
-## Workflow
+## Definición de workflow
+
+Para poder combinar ambas plantillas, las agregamos a un mismo *workflow*.
 
 ```{r}
+#| label: workflow
 my_workflow <- workflow() |> 
   add_model(my_model) |> 
   add_recipe(my_recipe)
@@ -67,72 +152,243 @@ my_workflow <- workflow() |>
 
 ## Fit
 
+Para entrenar el modelo, tomamos el *workflow* como punto de partida, y le hacemos `fit()` usando la data de entrenamiento.
+
 ```{r}
-# suscripcion_fit <- my_workflow |> 
-#   fit(data = suscripcion)
+#| label: first-fit
+suscripcion_fit <- my_workflow |>
+  fit(data = train_data)
+```
+
+El siguiente gráfico muestra las 12 variables con mayores coeficientes.
+
+------------------------------------------------------------------------
+
+```{r}
+#| label: fig-whisker
+#| code-fold: true
+suscripcion_fit |>
+  tidy() |>
+  slice_max(abs(estimate), n = 12) |>
+  dotwhisker::dwplot(
+    dot_args = list(size = 2, color = "black"),
+    whisker_args = list(color = "black"),
+    vline = geom_vline(
+      xintercept = 0,
+      colour = "grey50",
+      linetype = 2
+    )
+  ) +
+  theme_light()
+```
+
+------------------------------------------------------------------------
+
+## Validación
+
+Para esto, mostramos el cálculo del AUC y su gráfico correspondiente. Esto se obtiene a partir de hacer predicciones con el modelo entrenado, usando la data de test.
+
+```{r}
+#| label: first-auc
+#| code-fold: true
+suscripcion_fit |> 
+  augment(test_data) |> 
+  roc_auc(truth = `Subscripcion Deposito`, .pred_no) |> 
+  gt::gt() |> 
+  gt::tab_options(table.font.size = 24)
+```
+
+------------------------------------------------------------------------
+
+```{r}
+#| label: fig-auc-plot
+#| code-fold: true
+suscripcion_fit |> 
+  augment(test_data) |> 
+  roc_curve(truth = `Subscripcion Deposito`, .pred_no) |>
+  autoplot()
+```
+
+# Prueba con otros modelos
+
+## Workflow múltiple
+
+Se mantiene la plantilla de pre-procesamiento, pero creamos un listado de plantillas de modelos. Para poder, comparar, incluímos la plantilla de regresión logística.
+
+```{r}
+#| label: workflow-multi
+nuevo_workflow <- workflow_set(
+  preproc = list(
+    recipe = my_recipe
+  ), 
+  models = list(
+    logistica = logistic_reg(mode = "classification"),
+    arbol_decision = decision_tree(mode = "classification"),
+    random_forest = rand_forest(mode = "classification"),
+    boosted_tree = boost_tree(mode = "classification")
+  )
+)
+```
+
+## Entrenamiento múltiple
+
+Para el entrenamiento, se usa el workflow múltiple y el split hecho para cross validation.
+
+```{r}
+#| label: fit-multi
+#| eval: false
+set.seed(42) # volvemos a usar semilla por el random forest
+
+suscripcion_fit_multiple <- workflow_map(
+  object = nuevo_workflow, 
+  fn = "fit_resamples",
+  resamples = folds_cv, # generado en el data splitting
+  control = control_resamples(save_workflow = TRUE),
+  verbose = TRUE
+)
+```
+
+Con ello, se obtuvieron 10 resultados para evaluar cada modelo.
+
+------------------------------------------------------------------------
+
+El siguiente gráfico muestra el desempeño según tres indicadores.
+
+```{r}
+#| label: write-rds
+#| echo: false
+#| eval: false
+write_rds(
+  x = suscripcion_fit_multiple, 
+  file = "suscripcion_fit_multiple.rds", 
+  compress = "xz"
+)
 ```
 
 ```{r}
-set.seed(42)
-
-suscripcion_fit_cv <- my_workflow |> 
-  fit_resamples(folds, control = control_resamples(save_workflow = TRUE))
+#| label: read-rds
+#| echo: false
+suscripcion_fit_multiple <- read_rds("suscripcion_fit_multiple.rds")
 ```
 
 ```{r}
-suscripcion_fit <- suscripcion_fit_cv |> 
-  fit_best()
+#| label: fig-cross-validation-plot
+#| code-fold: true
+suscripcion_fit_multiple |> 
+  select(wflow_id, result) |> 
+  unnest(result) |> 
+  select(wflow_id, id, .metrics) |> 
+  unnest(.metrics) |> 
+  mutate(wflow_id = str_remove(wflow_id, "recipe_")) |> 
+  ggplot(aes(id, .estimate, color = wflow_id, group = wflow_id)) +
+  geom_line() +
+  geom_point() +
+  facet_wrap(~.metric, ncol = 1, scales = "free_y") +
+  theme_light() 
+```
+
+------------------------------------------------------------------------
+
+También es posible mirar a los promedios (con barra de error) de los tres indicadores. En general, los cuatro están bastante cercanos entre sí, y en varios casos sus errores se superponen.
+
+```{r}
+#| label: fig-plot-comparison
+#| code-fold: true
+suscripcion_fit_multiple |> 
+  autoplot() +
+  theme_light() +
+  guides(shape = "none")
+```
+
+------------------------------------------------------------------------
+
+Nos podemos concentrar en el promedio del indicador **AUC** para elegir el modelo. En este caso, *boosted_tree* ocupa el primer lugar.
+
+```{r}
+#| label: tbl-comparison
+#| code-fold: true
+suscripcion_fit_multiple |> 
+  rank_results(rank_metric = "roc_auc") |> 
+  filter(.metric == "roc_auc") |> 
+  select(modelo = wflow_id, roc_auc = mean, rank) |> 
+  mutate(modelo = str_remove(modelo, "recipe_")) |> 
+  gt::gt() |> 
+  gt::tab_options(table.font.size = 24)
+```
+
+# Entrenamiento final
+
+## Nuevo entrenamiento
+
+Ahora que sabemos que `boosted_tree` tuvo mejor desempeño. Entrenamos el 100% de los datos con este algoritmo.
+
+```{r}
+#| label: fit-final
+my_boosted_tree <- workflow() |> 
+  add_recipe(my_recipe) |> 
+  add_model(boost_tree(mode = "classification")) |> 
+  fit(data = suscripcion)
+```
+
+## Predicciones
+
+Para predecir, usamos la función \`augment()\`, que añade las predicciones al como nuevas columnas en el conjunto de datos
+
+```{r}
+#| label: augment
+resultados <- my_boosted_tree |> 
+  augment(validacion) 
 ```
 
 ```{r}
-# suscripcion_fit |> 
-#   extract_fit_parsnip() |> 
-#   tidy()
+#| label: results
+#| echo: false
+resultados
 ```
+
+------------------------------------------------------------------------
 
 ```{r}
-# suscripcion_fit |> 
-#   augment(test_data) |> 
-#   roc_curve(truth = `Subscripcion Deposito`, .pred_no) |> 
-#   autoplot()
+#| label: fig-plot-final
+#| code-fold: true
+library(patchwork)
+plot_density <- resultados |> 
+  ggplot(aes(.pred_si)) +
+  geom_density() +
+  theme_light()
+
+plot_col <- resultados |>
+  count(.pred_class) |> 
+  ggplot(aes(.pred_class, n)) +
+  geom_col() +
+  geom_label(aes(label = n)) +
+  theme_light()
+
+plot_density / plot_col
 ```
+
+## Guardar resultados
+
+Guardamos los resultados en un nuevo archivo para ser subidos a Kaggle.
 
 ```{r}
-# suscripcion_fit |> 
-#   augment(test_data) |> 
-#   roc_auc(truth = `Subscripcion Deposito`, .pred_no)
+#| label: write-csv
+#| eval: false
+resultados |> 
+  select(Id, `Subscripcion Deposito` = .pred_si) |> 
+  write_csv("resultados.csv")
 ```
 
-## Predictions
+::: aside
+En realidad se predijo con todos los modelos presentados. En la plataforma, los resultados de `random_forest` obtuvieron mayor puntaje.
+:::
 
-```{r}
-resultados <- suscripcion_fit |> 
-  augment(validation) |> 
-  select(Id, `Subscripcion Deposito` = .pred_si)
-```
+## Posibles mejoras
 
-## Save results
+-   *Tunear* los parámetros del modelo
 
-```{r}
-last_result <- list.files("results", full.names = TRUE) |> 
-  last() |> 
-  read_csv()
-```
+-   Selección de características post comparación de modelos
 
-```{r}
-results_are_the_same <- tibble(
-  current = resultados$`Subscripcion Deposito`,
-  last = last_result$`Subscripcion Deposito`
-) |> 
-  mutate(across(everything(), ~ .x > 0.5)) |> 
-  count(across(everything())) |> 
-  summarise(equals = n() == 2) |> 
-  pull(equals)
-```
+-   Limpieza/imputación de datos
 
-```{r}
-if (!results_are_the_same) {
-  resultados |> 
-    write_csv(format(now(), "results/r-%Y-%m-%d-%H-%M-%S.csv"))
-}
-```
+# Gracias! {.unnumbered}

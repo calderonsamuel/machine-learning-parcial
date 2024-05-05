@@ -1,5 +1,6 @@
 project:
   title: "machine-learning-parcial"
+  output-dir: docs
 
 editor: visual
 
