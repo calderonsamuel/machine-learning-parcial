@@ -617,11 +617,9 @@ Figure&nbsp;1
 <span id="cb13-12"><a href="" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
 <span id="cb13-13"><a href="" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_light</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
-
 </div>
-<img data-src="index_files/figure-revealjs/fig-whisker-1.png" id="fig-whisker" width="960" class="r-stretch quarto-figure-center"><p class="caption">
-Figure&nbsp;2
-</p></section>
+
+<img data-src="data/images/fig-whisker.png" class="quarto-figure quarto-figure-center r-stretch"></section>
 <section id="validación" class="slide level2" data-number="2.5">
 <h2><span class="header-section-number">2.5</span> Validación</h2>
 <p>Para esto, mostramos el cálculo del AUC y su gráfico correspondiente. Esto se obtiene a partir de hacer predicciones con el modelo entrenado, usando la data de test.</p>
@@ -1109,11 +1107,9 @@ Figure&nbsp;2
 <span id="cb15-3"><a href="" aria-hidden="true" tabindex="-1"></a>  <span class="fu">roc_curve</span>(<span class="at">truth =</span> <span class="st">`</span><span class="at">Subscripcion Deposito</span><span class="st">`</span>, .pred_no) <span class="sc">|&gt;</span></span>
 <span id="cb15-4"><a href="" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autoplot</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
-
 </div>
-<img data-src="index_files/figure-revealjs/fig-auc-plot-1.png" id="fig-auc-plot" width="960" class="r-stretch quarto-figure-center"><p class="caption">
-Figure&nbsp;3
-</p></section></section>
+
+<img data-src="data/images/fig_auc_plot.png" class="quarto-figure quarto-figure-center r-stretch"></section></section>
 <section>
 <section id="prueba-con-otros-modelos" class="title-slide slide level1 center" data-number="3">
 <h1><span class="header-section-number">3</span> Prueba con otros modelos</h1>
@@ -1170,11 +1166,9 @@ Figure&nbsp;3
 <span id="cb18-10"><a href="" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span>.metric, <span class="at">ncol =</span> <span class="dv">1</span>, <span class="at">scales =</span> <span class="st">"free_y"</span>) <span class="sc">+</span></span>
 <span id="cb18-11"><a href="" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_light</span>() </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
-
 </div>
-<img data-src="index_files/figure-revealjs/fig-cross-validation-plot-1.png" id="fig-cross-validation-plot" width="960" class="r-stretch quarto-figure-center"><p class="caption">
-Figure&nbsp;4
-</p></section>
+
+<img data-src="data/images/fig_cross_validation_plot.png" class="quarto-figure quarto-figure-center r-stretch"></section>
 <section class="slide level2">
 
 <p>También es posible mirar a los promedios (con barra de error) de los tres indicadores. En general, los cuatro están bastante cercanos entre sí, y en varios casos sus errores se superponen.</p>
@@ -1186,11 +1180,9 @@ Figure&nbsp;4
 <span id="cb19-3"><a href="" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_light</span>() <span class="sc">+</span></span>
 <span id="cb19-4"><a href="" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">shape =</span> <span class="st">"none"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
-
 </div>
-<img data-src="index_files/figure-revealjs/fig-plot-comparison-1.png" id="fig-plot-comparison" width="960" class="r-stretch quarto-figure-center"><p class="caption">
-Figure&nbsp;5
-</p></section>
+
+<img data-src="data/images/fig_plot_comparison.png" class="quarto-figure quarto-figure-center r-stretch"></section>
 <section class="slide level2">
 
 <p>Nos podemos concentrar en el promedio del indicador <strong>AUC</strong> para elegir el modelo. En este caso, <em>boosted_tree</em> ocupa el primer lugar.</p>
@@ -1752,11 +1744,9 @@ Figure&nbsp;5
 <span id="cb24-13"><a href="" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb24-14"><a href="" aria-hidden="true" tabindex="-1"></a>plot_density <span class="sc">/</span> plot_col</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
-
 </div>
-<img data-src="index_files/figure-revealjs/fig-plot-final-1.png" id="fig-plot-final" width="960" class="r-stretch quarto-figure-center"><p class="caption">
-Figure&nbsp;6
-</p></section>
+
+<img data-src="data/images/fig-plot-final.png" class="quarto-figure quarto-figure-center r-stretch"></section>
 <section id="guardar-resultados" class="slide level2" data-number="4.3">
 <h2><span class="header-section-number">4.3</span> Guardar resultados</h2>
 <p>Guardamos los resultados en un nuevo archivo para ser subidos a Kaggle.</p>
