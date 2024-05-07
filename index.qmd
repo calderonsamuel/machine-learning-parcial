@@ -169,6 +169,7 @@ El siguiente gráfico muestra las 12 variables con mayores coeficientes.
 ```{r}
 #| label: fig-whisker
 #| code-fold: true
+#| eval: false
 suscripcion_fit |>
   tidy() |>
   slice_max(abs(estimate), n = 12) |>
@@ -183,6 +184,28 @@ suscripcion_fit |>
   ) +
   theme_light()
 ```
+
+```{r}
+#| echo: false
+#| eval: false
+fig_whisker <- suscripcion_fit |>
+  tidy() |>
+  slice_max(abs(estimate), n = 12) |>
+  dotwhisker::dwplot(
+    dot_args = list(size = 2, color = "black"),
+    whisker_args = list(color = "black"),
+    vline = geom_vline(
+      xintercept = 0,
+      colour = "grey50",
+      linetype = 2
+    )
+  ) +
+  theme_light()
+
+ggsave("data/images/fig-whisker.png", fig_whisker, width = 8, height = 6)
+```
+
+![](data/images/fig-whisker.png){fig-align="center"}
 
 ------------------------------------------------------------------------
 
@@ -205,11 +228,25 @@ suscripcion_fit |>
 ```{r}
 #| label: fig-auc-plot
 #| code-fold: true
+#| eval: false
 suscripcion_fit |> 
   augment(test_data) |> 
   roc_curve(truth = `Subscripcion Deposito`, .pred_no) |>
   autoplot()
 ```
+
+```{r}
+#| eval: false
+#| echo: false
+fig_auc_plot <- suscripcion_fit |> 
+  augment(test_data) |> 
+  roc_curve(truth = `Subscripcion Deposito`, .pred_no) |>
+  autoplot()
+
+ggsave("data/images/fig_auc_plot.png", fig_auc_plot, width = 8, height = 6)
+```
+
+![](data/images/fig_auc_plot.png){fig-align="center"}
 
 # Prueba con otros modelos
 
@@ -276,6 +313,7 @@ suscripcion_fit_multiple <- read_rds("suscripcion_fit_multiple.rds")
 ```{r}
 #| label: fig-cross-validation-plot
 #| code-fold: true
+#| eval: false
 suscripcion_fit_multiple |> 
   select(wflow_id, result) |> 
   unnest(result) |> 
@@ -289,6 +327,26 @@ suscripcion_fit_multiple |>
   theme_light() 
 ```
 
+```{r}
+#| echo: false
+#| eval: false
+fig_cross_validation_plot <- suscripcion_fit_multiple |> 
+  select(wflow_id, result) |> 
+  unnest(result) |> 
+  select(wflow_id, id, .metrics) |> 
+  unnest(.metrics) |> 
+  mutate(wflow_id = str_remove(wflow_id, "recipe_")) |> 
+  ggplot(aes(id, .estimate, color = wflow_id, group = wflow_id)) +
+  geom_line() +
+  geom_point() +
+  facet_wrap(~.metric, ncol = 1, scales = "free_y") +
+  theme_light() 
+
+ggsave("data/images/fig_cross_validation_plot.png", fig_cross_validation_plot, width = 8, height = 6)
+```
+
+![](data/images/fig_cross_validation_plot.png){fig-align="center"}
+
 ------------------------------------------------------------------------
 
 También es posible mirar a los promedios (con barra de error) de los tres indicadores. En general, los cuatro están bastante cercanos entre sí, y en varios casos sus errores se superponen.
@@ -296,11 +354,25 @@ También es posible mirar a los promedios (con barra de error) de los tres indic
 ```{r}
 #| label: fig-plot-comparison
 #| code-fold: true
+#| eval: false
 suscripcion_fit_multiple |> 
   autoplot() +
   theme_light() +
   guides(shape = "none")
 ```
+
+```{r}
+#| eval: false
+#| echo: false
+fig_plot_comparison <- suscripcion_fit_multiple |> 
+  autoplot() +
+  theme_light() +
+  guides(shape = "none")
+
+ggsave("data/images/fig_plot_comparison.png", fig_plot_comparison, width = 8, height = 6)
+```
+
+![](data/images/fig_plot_comparison.png){fig-align="center"}
 
 ------------------------------------------------------------------------
 
@@ -353,6 +425,7 @@ resultados
 ```{r}
 #| label: fig-plot-final
 #| code-fold: true
+#| eval: false
 library(patchwork)
 plot_density <- resultados |> 
   ggplot(aes(.pred_si)) +
@@ -368,6 +441,15 @@ plot_col <- resultados |>
 
 plot_density / plot_col
 ```
+
+```{r}
+#| eval: false
+#| echo: false
+
+ggsave("data/images/fig-plot-final.png", (plot_density / plot_col), width = 8, height = 6)
+```
+
+![](data/images/fig-plot-final.png){fig-align="center"}
 
 ## Guardar resultados
 
