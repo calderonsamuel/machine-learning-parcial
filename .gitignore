@@ -6,3 +6,5 @@
 .quarto
 /.quarto/
 /docs/
+index_cache
+machine-learning-parcial_cache
